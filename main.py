@@ -100,14 +100,12 @@ def seasonStats(l):
         seasonStatsDict[key2] = str("%.2f" % (float(fieldCount(season, "FTR", "D")) / len(season) * 100))
         key2 = key + ('HGOALS',)
         seasonStatsDict[key2] = str(fieldAvg(season, "FTHG"))
-     #   print "Key: " + str(key)
         key2 = key + ('AGOALS',)
         seasonStatsDict[key2] = str(fieldAvg(season, "FTAG"))
-    #    print "Key: " + str(key)
 
 
 def homeMatchStats(m, record):
-    retval = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG":0 }
+    retval = record
 
     if m["FTR"] == 'H':
         retval["Wins"] = record["Wins"] + 1
@@ -122,7 +120,8 @@ def homeMatchStats(m, record):
     return retval
 
 def awayMatchStats(m, record):
-    retval = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG":0 }
+    retval = record
+
     if m["FTR"] == 'A':
         retval["Wins"] = record["Wins"] + 1
     elif m["FTR"] == 'D':
@@ -133,30 +132,25 @@ def awayMatchStats(m, record):
     retval["FTHG"] = int(m["FTHG"]) + int(record["FTHG"])
     retval["FTAG"] = int(m["FTAG"]) + int(record["FTAG"])
 
-    print retval
     return retval
 
 def versusTeam(l, team):
     """
-
-
     @rtype : dict
     @param l: List of matches (single team) to create the table
     @param team: Team name
     @return: Dict containing the data. Key is ("opponent", "away"|"home) and
-             value is {"Wins": x, "Draws": x, "Losses": x, "FTHG": x, "FTAG":x
+             value is {"Wins": x, "Draws": x, "Losses": x, "FTHG": x, "FTAG": x
     """
     retval = {}
-    homeList = [v for v in l[0] if v["HomeTeam"] == team]
-    awayList = [v for v in l[0] if v["AwayTeam"] == team]
+    homeList = [v for v in l if v["HomeTeam"] == team]
+    awayList = [v for v in l if v["AwayTeam"] == team]
 
     for match in homeList:
         awayTeam = match["AwayTeam"]
-
-#        pprint(match)
- #       if match["HomeTeam"] == team:
         if (awayTeam, "home") not in retval:
             retval[(awayTeam, "home")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG":0 }
+        print retval[(awayTeam, "home")]
         retval[(awayTeam, "home")] = homeMatchStats(match, retval[(awayTeam, "home")])
     for match in awayList:
         homeTeam = match["HomeTeam"]
@@ -194,7 +188,12 @@ l2 = [item for sublist in E0 for item in sublist]
 print "Stats for entire data set: "
 seasonStats(matches)
 
-versusTable = versusTeam([v for (k,v) in matches.iteritems() if k[0] == 'E0'], "Everton")
+tmp = [v for (k,v) in matches.iteritems() if k[0] == 'E0']
+#pprint(tmp)
+#print "len: " + str(len(tmp))
+#versusTable = versusTeam([v for (k,v) in matches.iteritems() if k[0] == 'E0'], "Everton")
+pprint(l2)
+versusTable = versusTeam(l2, "Everton")
 pprint(versusTable)
 #pprint(seasonStatsDict)
 #print sum([float(match["FTHG"]) for match in matches]) / len(matches)
