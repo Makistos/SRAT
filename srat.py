@@ -6,6 +6,8 @@ from datetime import datetime
 from os import listdir
 from os.path import isfile, join
 import re
+from elo import elo_adjust
+
 #import itertools as IT
 #import collections
 
@@ -208,9 +210,43 @@ if __name__ == '__main__':
     tmp = [x["HomeTeam"] for x in l2]
     teams = []
     teams = sorted(list(set(tmp)))
-    print str(teams)
+#    print str(teams)
     versusTable = map(lambda x: versus_team(l2, x), teams)
-    pprint(versusTable)
+#    pprint(versusTable)
+
+    for i in range(len(l2)):
+        match = list(l2)[i]
+#        print match
+        tmp = [x for x in l2[0:i-1] if x["HomeTeam"] == match["HomeTeam"]]
+        if len(tmp) < 1:
+            old_home = 1000
+        elif "home_elo" in tmp[-1]:
+            old_home = tmp[-1]["home_elo"]
+        else:
+            old_home = 1000
+        tmp = [x for x in l2[0:i-1] if x["AwayTeam"] == match["AwayTeam"]]
+        if len(tmp) < 1:
+            old_home = 1000
+        elif "away_elo" in tmp[-1]:
+            old_away = tmp[-1]["away_elo"]
+        else:
+            old_away = 1000
+
+        (new_home, new_away) = elo_adjust(match, old_home, old_away)
+        match["home_elo"] = old_home + new_home
+        match["away_elo"] = old_away + new_away
+        print match
+
+        print ("%s: %s (%d -> %d) %d - %d %s (%d -> %d)" % (match["Date"],
+            match["HomeTeam"],
+            float(round(old_home, 2)),
+            float(round(match["home_elo"],2)),
+            int(match["FTHG"]),
+            int(match["FTAG"]),
+            match["AwayTeam"],
+            float(round(old_away, 2)),
+            float(round(match["away_elo"], 2))))
+
     #pprint(seasonStatsDict)
     #print sum([float(match["FTHG"]) for match in matches]) / len(matches)
     #print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "H")
