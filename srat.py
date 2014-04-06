@@ -42,17 +42,24 @@ def flatten_dict(m):
 #        else:
 #            yield first
 
-# Open csv files (and .csv$ only)
-csvFiles = [f for f in listdir("csv") if isfile(join("csv", f)) and f.endswith(".csv")]
 
-print "Using files: " + str((csvFiles))
+def open_files(files):
+    """
+      Open csv files (and .csv$ only)
+    """
+    if (files == ''):
+        csvFiles = [f for f in listdir("csv") if isfile(join("csv", f)) and f.endswith(".csv")]
+    else:
+        csvFiles = files
 
-for c in csvFiles:
-    matchObj = re.match(r'(.+)(\d{4})\-(\d{4})(.*)', c)
-    matchFiles[(matchObj.group(1), matchObj.group(2))] = c
+    print "Using files: " + str((csvFiles))
+
+    for c in csvFiles:
+        matchObj = re.match(r'(.+)(\d{4})\-(\d{4})(.*)', c)
+        matchFiles[(matchObj.group(1), matchObj.group(2))] = c
 
 
-def fieldAvg(lst, fieldName):
+def field_avg(lst, fieldName):
     retval = 0.0
     s = 0
     try:
@@ -68,43 +75,43 @@ def fieldAvg(lst, fieldName):
     return retval
 
 
-def fieldSum(l, fieldName):
+def field_sum(l, fieldName):
     return sum(line[fieldName] for line in l)
 
 
-def fieldCount(l, fieldName, value):
+def field_count(l, fieldName, value):
     return len([line for line in l if line[fieldName] == value])
 
 
-def filterRows(l, fieldName, value):
+def filter_rows(l, fieldName, value):
     return [line for line in l if line[fieldName] == value]
 
 
-def listTeamMatchesBefore(l, date, team, num):
+def list_team_matches_before(l, date, team, num):
     #retval = [m for m in l if (m["HomeTeam"] == team or m["AwayTeam"] == team)]
     retval = [m for m in l if datetime.strptime(m['Date'], '%d/%m/%y') < datetime.strptime(date, '%d/%m/%y') and (m['HomeTeam'] == team or m['AwayTeam'] == team)]
     return retval
 
 
-def seasonStats(l):
+def season_stats(l):
     flagThis = 0
     for (key, season) in l.iteritems():
         key2 = key + ('HWIN',)
         try:
-            seasonStatsDict[key2] = str("%.2f" % (float(fieldCount(season, "FTR", "H")) / len(season) * 100))
+            seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, "FTR", "H")) / len(season) * 100))
         except ZeroDivisionError:
             print "Division by zero: " + str(key2)
         key2 = key + ('AWIN',)
-        seasonStatsDict[key2] = str("%.2f" % (float(fieldCount(season, "FTR", "A")) / len(season) * 100))
+        seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, "FTR", "A")) / len(season) * 100))
         key2 = key + ('DRAW',)
-        seasonStatsDict[key2] = str("%.2f" % (float(fieldCount(season, "FTR", "D")) / len(season) * 100))
+        seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, "FTR", "D")) / len(season) * 100))
         key2 = key + ('HGOALS',)
-        seasonStatsDict[key2] = str(fieldAvg(season, "FTHG"))
+        seasonStatsDict[key2] = str(field_avg(season, "FTHG"))
         key2 = key + ('AGOALS',)
-        seasonStatsDict[key2] = str(fieldAvg(season, "FTAG"))
+        seasonStatsDict[key2] = str(field_avg(season, "FTAG"))
 
 
-def homeMatchStats(m, record):
+def home_match_stats(m, record):
     retval = record
 
     if m["FTR"] == 'H':
@@ -119,7 +126,7 @@ def homeMatchStats(m, record):
 
     return retval
 
-def awayMatchStats(m, record):
+def away_match_stats(m, record):
     retval = record
 
     if m["FTR"] == 'A':
@@ -134,7 +141,7 @@ def awayMatchStats(m, record):
 
     return retval
 
-def versusTeam(l, team):
+def versus_team(l, team):
     """
     @rtype : dict
     @param l: List of matches (single team) to create the table
@@ -150,60 +157,69 @@ def versusTeam(l, team):
         awayTeam = match["AwayTeam"]
         if (awayTeam, "home") not in retval:
             retval[(awayTeam, "home")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG":0 }
-        print retval[(awayTeam, "home")]
-        retval[(awayTeam, "home")] = homeMatchStats(match, retval[(awayTeam, "home")])
+        retval[(awayTeam, "home")] = home_match_stats(match, retval[(awayTeam, "home")])
     for match in awayList:
         homeTeam = match["HomeTeam"]
         if (homeTeam, "away") not in retval:
             retval[(homeTeam, "away")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG":0 }
-        retval[(homeTeam, "away")] = awayMatchStats(match, retval[(homeTeam, "away")])
-    return retval
+        retval[(homeTeam, "away")] = away_match_stats(match, retval[(homeTeam, "away")])
+    return {team: retval}
 
-for ((key1, key2), name) in matchFiles.iteritems():
-    f = open('csv/' + name)
-    matches[(key1, key2)] = []
-    reader = csv.DictReader(f)
-    for line in reader:
-        # Make the dict a bit shorter, at least for now
-        shortDict = extractDict(['Date', 'HomeTeam', 'AwayTeam', 'FTR', 'FTHG', 'FTAG'], line)
-        matches[(key1, key2)].append(shortDict)
-    f.close()
 
-#for match in matches[("E0", "2010")]:
-#    pprint(shortDict)
+if __name__ == '__main__':
+    open_files("")
 
-l = flatten_dict(matches)
-#print "Tot: " + str(len(l))
+    for ((key1, key2), name) in matchFiles.iteritems():
+        f = open('csv/' + name)
+        matches[(key1, key2)] = []
+        reader = csv.DictReader(f)
+        for line in reader:
+            # Make the dict a bit shorter, at least for now
+            shortDict = extractDict(['Date', 'HomeTeam', 'AwayTeam', 'FTR', 'FTHG', 'FTAG'], line)
+            matches[(key1, key2)].append(shortDict)
+        f.close()
 
-# Get list items in a flat list
-E0 = [v for (k,v) in matches.iteritems() if k[0] == 'E0']
-l2 = [item for sublist in E0 for item in sublist]
+    #for match in matches[("E0", "2010")]:
+    #    pprint(shortDict)
 
-#with open('test.csv', 'wt') as out:
-#    pprint(l2, stream=out)
-#print "E0 tot: " + str(len(l2))
-#with open('test.csv', 'wt') as out:
-#    pprint(matches, stream=out)
+    l = flatten_dict(matches)
+    #print "Tot: " + str(len(l))
 
-print "Stats for entire data set: "
-seasonStats(matches)
+    # Get list items in a flat list
+    E0 = [v for (k,v) in matches.iteritems() if k[0] == 'E0']
+    l2 = [item for sublist in E0 for item in sublist]
 
-tmp = [v for (k,v) in matches.iteritems() if k[0] == 'E0']
-#pprint(tmp)
-#print "len: " + str(len(tmp))
-#versusTable = versusTeam([v for (k,v) in matches.iteritems() if k[0] == 'E0'], "Everton")
-pprint(l2)
-versusTable = versusTeam(l2, "Everton")
-pprint(versusTable)
-#pprint(seasonStatsDict)
-#print sum([float(match["FTHG"]) for match in matches]) / len(matches)
-#print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "H")
-#print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "A")
-#print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "D")
-#e = listTeamMatchesBefore(matches[("E0", "2012")], '23/03/14', 'Everton', 6)
-#print "All matches for season 2012 (" + str(len(e)) + ")"
-#for m in e:
-#    print m["Date"] + ": " + m["HomeTeam"] + "-" + m["AwayTeam"]
-#
-## Calculate number of home wins for team
-#print "Home wins for team in database: " + str(fieldCount(filterRows(m2, "HomeTeam", "Everton"), "FTR", "H"))
+    #with open('test.csv', 'wt') as out:
+    #    pprint(l2, stream=out)
+    #print "E0 tot: " + str(len(l2))
+    #with open('test.csv', 'wt') as out:
+    #    pprint(matches, stream=out)
+
+    print "Stats for entire data set: "
+    season_stats(matches)
+
+    tmp = [v for (k,v) in matches.iteritems() if k[0] == 'E0']
+    #pprint(tmp)
+    #print "len: " + str(len(tmp))
+    #versusTable = versusTeam([v for (k,v) in matches.iteritems() if k[0] == 'E0'], "Everton")
+    #pprint(l2)
+    seen = ()
+    tmp = []
+    tmp = [x["HomeTeam"] for x in l2]
+    teams = []
+    teams = sorted(list(set(tmp)))
+    print str(teams)
+    versusTable = map(lambda x: versus_team(l2, x), teams)
+    pprint(versusTable)
+    #pprint(seasonStatsDict)
+    #print sum([float(match["FTHG"]) for match in matches]) / len(matches)
+    #print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "H")
+    #print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "A")
+    #print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "D")
+    #e = listTeamMatchesBefore(matches[("E0", "2012")], '23/03/14', 'Everton', 6)
+    #print "All matches for season 2012 (" + str(len(e)) + ")"
+    #for m in e:
+    #    print m["Date"] + ": " + m["HomeTeam"] + "-" + m["AwayTeam"]
+    #
+    ## Calculate number of home wins for team
+    #print "Home wins for team in database: " + str(fieldCount(filterRows(m2, "HomeTeam", "Everton"), "FTR", "H"))
