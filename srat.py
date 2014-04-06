@@ -178,6 +178,13 @@ if __name__ == '__main__':
         for line in reader:
             # Make the dict a bit shorter, at least for now
             shortDict = extractDict(['Date', 'HomeTeam', 'AwayTeam', 'FTR', 'FTHG', 'FTAG'], line)
+            if shortDict['Date'] == '':
+                continue
+            try:
+                shortDict['Date'] = datetime.strptime(shortDict['Date'], '%d/%m/%y').strftime('%y/%m/%d')
+            except:
+                shortDict['Date'] = datetime.strptime(shortDict['Date'], '%d/%m/%Y').strftime('%y/%m/%d')
+
             matches[(key1, key2)].append(shortDict)
         f.close()
 
@@ -189,7 +196,7 @@ if __name__ == '__main__':
 
     # Get list items in a flat list
     E0 = [v for (k,v) in matches.iteritems() if k[0] == 'E0']
-    l2 = [item for sublist in E0 for item in sublist]
+    l2 = sorted([item for sublist in E0 for item in sublist], key=lambda k: k['Date'])
 
     #with open('test.csv', 'wt') as out:
     #    pprint(l2, stream=out)
