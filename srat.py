@@ -6,7 +6,8 @@ from datetime import datetime
 from os import listdir
 from os.path import isfile, join
 import re
-from elo import elo_adjust
+from elo import elo_calculate
+import db
 
 #import itertools as IT
 #import collections
@@ -16,8 +17,22 @@ matchFiles = {}
 seasonStatsDict = {}
 
 # Extract some keys from a dict (the whole match dict is very big, this helps debugging)
-extractDict = lambda keys, dict: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
-                                    map(None, keys, map(dict.get, keys)), {})
+extractDict = lambda keys, dict: reduce(lambda x, y: x.update({y[0]: y[1]}) or x,
+                                        map(None, keys, map(dict.get, keys)), {})
+
+
+def print_matches(match_list):
+    for match in match_list:
+        print("%s: (%d->%d) %s %d - %d %s (%d->%d)" %
+              (match[db.DATE],
+              round(float(match[db.HE]) - float(match[db.HEC]), 2),
+              round(float(match[db.HE]), 2),
+              match[db.HOME_TEAM],
+              int(match[db.FTHG]),
+              int(match[db.FTAG]),
+              match[db.AWAY_TEAM],
+              round(float(match[db.AE]) - float(match[db.AEC]), 2),
+              round(float(match[db.AE]), 2)))
 
 
 def flatten_list():
@@ -67,11 +82,11 @@ def field_avg(lst, fieldName):
     try:
         for line in lst:
             s += float(line[fieldName])
-#        retval = sum([float(line[fieldName]) for line in lst]) / len(l)
+        #        retval = sum([float(line[fieldName]) for line in lst]) / len(l)
     except ValueError:
         print "ValueError! Value for " + fieldName + " is: " + str(line[fieldName])
         #print line
-#        print "HomeTeam: " + str(line["HomeTeam"]) + ", AwayTeam: " + str(line["AwayTeam"])
+        #        print "HomeTeam: " + str(line["HomeTeam"]) + ", AwayTeam: " + str(line["AwayTeam"])
         retval = 0.0
     retval = s / len(l)
     return retval
@@ -91,7 +106,8 @@ def filter_rows(l, fieldName, value):
 
 def list_team_matches_before(l, date, team, num):
     #retval = [m for m in l if (m["HomeTeam"] == team or m["AwayTeam"] == team)]
-    retval = [m for m in l if datetime.strptime(m['Date'], '%d/%m/%y') < datetime.strptime(date, '%d/%m/%y') and (m['HomeTeam'] == team or m['AwayTeam'] == team)]
+    retval = [m for m in l if datetime.strptime(m['Date'], '%d/%m/%y') < datetime.strptime(date, '%d/%m/%y') and (
+        m['HomeTeam'] == team or m['AwayTeam'] == team)]
     return retval
 
 
@@ -128,6 +144,7 @@ def home_match_stats(m, record):
 
     return retval
 
+
 def away_match_stats(m, record):
     retval = record
 
@@ -142,6 +159,7 @@ def away_match_stats(m, record):
     retval["FTAG"] = int(m["FTAG"]) + int(record["FTAG"])
 
     return retval
+
 
 def versus_team(l, team):
     """
@@ -158,12 +176,12 @@ def versus_team(l, team):
     for match in homeList:
         awayTeam = match["AwayTeam"]
         if (awayTeam, "home") not in retval:
-            retval[(awayTeam, "home")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG":0 }
+            retval[(awayTeam, "home")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG": 0}
         retval[(awayTeam, "home")] = home_match_stats(match, retval[(awayTeam, "home")])
     for match in awayList:
         homeTeam = match["HomeTeam"]
         if (homeTeam, "away") not in retval:
-            retval[(homeTeam, "away")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG":0 }
+            retval[(homeTeam, "away")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG": 0}
         retval[(homeTeam, "away")] = away_match_stats(match, retval[(homeTeam, "away")])
     return {team: retval}
 
@@ -195,7 +213,7 @@ if __name__ == '__main__':
     #print "Tot: " + str(len(l))
 
     # Get list items in a flat list
-    E0 = [v for (k,v) in matches.iteritems() if k[0] == 'E0']
+    E0 = [v for (k, v) in matches.iteritems() if k[0] == 'E0']
     l2 = sorted([item for sublist in E0 for item in sublist], key=lambda k: k['Date'])
 
     #with open('test.csv', 'wt') as out:
@@ -207,7 +225,7 @@ if __name__ == '__main__':
     print "Stats for entire data set: "
     season_stats(matches)
 
-    tmp = [v for (k,v) in matches.iteritems() if k[0] == 'E0']
+    tmp = [v for (k, v) in matches.iteritems() if k[0] == 'E0']
     #pprint(tmp)
     #print "len: " + str(len(tmp))
     #versusTable = versusTeam([v for (k,v) in matches.iteritems() if k[0] == 'E0'], "Everton")
@@ -217,42 +235,13 @@ if __name__ == '__main__':
     tmp = [x["HomeTeam"] for x in l2]
     teams = []
     teams = sorted(list(set(tmp)))
-#    print str(teams)
+    #    print str(teams)
     versusTable = map(lambda x: versus_team(l2, x), teams)
-#    pprint(versusTable)
+    #    pprint(versusTable)
 
-    for i in range(len(l2)):
-        match = list(l2)[i]
-#        print match
-        tmp = [x for x in l2[0:i-1] if x["HomeTeam"] == match["HomeTeam"]]
-        if len(tmp) < 1:
-            old_home = 1000
-        elif "home_elo" in tmp[-1]:
-            old_home = tmp[-1]["home_elo"]
-        else:
-            old_home = 1000
-        tmp = [x for x in l2[0:i-1] if x["AwayTeam"] == match["AwayTeam"]]
-        if len(tmp) < 1:
-            old_home = 1000
-        elif "away_elo" in tmp[-1]:
-            old_away = tmp[-1]["away_elo"]
-        else:
-            old_away = 1000
+    elo_calculate(l2)
 
-        (new_home, new_away) = elo_adjust(match, old_home, old_away)
-        match["home_elo"] = old_home + new_home
-        match["away_elo"] = old_away + new_away
-        print match
-
-        print ("%s: %s (%d -> %d) %d - %d %s (%d -> %d)" % (match["Date"],
-            match["HomeTeam"],
-            float(round(old_home, 2)),
-            float(round(match["home_elo"],2)),
-            int(match["FTHG"]),
-            int(match["FTAG"]),
-            match["AwayTeam"],
-            float(round(old_away, 2)),
-            float(round(match["away_elo"], 2))))
+    print_matches(l2)
 
     #pprint(seasonStatsDict)
     #print sum([float(match["FTHG"]) for match in matches]) / len(matches)
