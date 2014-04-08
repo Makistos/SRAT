@@ -106,8 +106,8 @@ def filter_rows(l, fieldName, value):
 
 def list_team_matches_before(l, date, team, num):
     #retval = [m for m in l if (m["HomeTeam"] == team or m["AwayTeam"] == team)]
-    retval = [m for m in l if datetime.strptime(m['Date'], '%d/%m/%y') < datetime.strptime(date, '%d/%m/%y') and (
-        m['HomeTeam'] == team or m['AwayTeam'] == team)]
+    retval = [m for m in l if datetime.strptime(m[db.DATE], '%d/%m/%y') < datetime.strptime(date, '%d/%m/%y') and (
+        m[db.HOME_TEAM] == team or m[db.AWAY_TEAM] == team)]
     return retval
 
 
@@ -116,31 +116,31 @@ def season_stats(l):
     for (key, season) in l.iteritems():
         key2 = key + ('HWIN',)
         try:
-            seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, "FTR", "H")) / len(season) * 100))
+            seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, db.FTR, "H")) / len(season) * 100))
         except ZeroDivisionError:
             print "Division by zero: " + str(key2)
         key2 = key + ('AWIN',)
-        seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, "FTR", "A")) / len(season) * 100))
+        seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, db.FTR, "A")) / len(season) * 100))
         key2 = key + ('DRAW',)
-        seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, "FTR", "D")) / len(season) * 100))
+        seasonStatsDict[key2] = str("%.2f" % (float(field_count(season, db.FTR, "D")) / len(season) * 100))
         key2 = key + ('HGOALS',)
-        seasonStatsDict[key2] = str(field_avg(season, "FTHG"))
+        seasonStatsDict[key2] = str(field_avg(season, db.FTHG))
         key2 = key + ('AGOALS',)
-        seasonStatsDict[key2] = str(field_avg(season, "FTAG"))
+        seasonStatsDict[key2] = str(field_avg(season, db.FTAG))
 
 
 def home_match_stats(m, record):
     retval = record
 
-    if m["FTR"] == 'H':
+    if m[db.FTR] == 'H':
         retval["Wins"] = record["Wins"] + 1
-    elif m["FTR"] == 'D':
+    elif m[db.FTR] == 'D':
         retval["Draws"] = record["Draws"] + 1
     else:
         retval["Losses"] = record["Losses"] + 1
 
-    retval["FTHG"] = int(m["FTHG"]) + int(record["FTHG"])
-    retval["FTAG"] = int(m["FTAG"]) + int(record["FTAG"])
+    retval[db.FTHG] = int(m[db.FTHG]) + int(record[db.FTHG])
+    retval[db.FTAG] = int(m[db.FTAG]) + int(record[db.FTAG])
 
     return retval
 
@@ -148,15 +148,15 @@ def home_match_stats(m, record):
 def away_match_stats(m, record):
     retval = record
 
-    if m["FTR"] == 'A':
+    if m[db.FTR] == 'A':
         retval["Wins"] = record["Wins"] + 1
-    elif m["FTR"] == 'D':
+    elif m[db.FTR] == 'D':
         retval["Draws"] = record["Draws"] + 1
     else:
         retval["Losses"] = record["Losses"] + 1
 
-    retval["FTHG"] = int(m["FTHG"]) + int(record["FTHG"])
-    retval["FTAG"] = int(m["FTAG"]) + int(record["FTAG"])
+    retval[db.FTHG] = int(m[db.FTHG]) + int(record[db.FTHG])
+    retval[db.FTAG] = int(m[db.FTAG]) + int(record[db.FTAG])
 
     return retval
 
@@ -170,18 +170,18 @@ def versus_team(l, team):
              value is {"Wins": x, "Draws": x, "Losses": x, "FTHG": x, "FTAG": x
     """
     retval = {}
-    homeList = [v for v in l if v["HomeTeam"] == team]
-    awayList = [v for v in l if v["AwayTeam"] == team]
+    homeList = [v for v in l if v[db.HOME_TEAM] == team]
+    awayList = [v for v in l if v[db.AWAY_TEAM] == team]
 
     for match in homeList:
-        awayTeam = match["AwayTeam"]
+        awayTeam = match[db.AWAY_TEAM]
         if (awayTeam, "home") not in retval:
-            retval[(awayTeam, "home")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG": 0}
+            retval[(awayTeam, "home")] = {"Wins": 0, "Draws": 0, "Losses": 0, db.FTHG: 0, db.FTAG: 0}
         retval[(awayTeam, "home")] = home_match_stats(match, retval[(awayTeam, "home")])
     for match in awayList:
-        homeTeam = match["HomeTeam"]
+        homeTeam = match[db.HOME_TEAM]
         if (homeTeam, "away") not in retval:
-            retval[(homeTeam, "away")] = {"Wins": 0, "Draws": 0, "Losses": 0, "FTHG": 0, "FTAG": 0}
+            retval[(homeTeam, "away")] = {"Wins": 0, "Draws": 0, "Losses": 0, db.FTHG: 0, db.FTAG: 0}
         retval[(homeTeam, "away")] = away_match_stats(match, retval[(homeTeam, "away")])
     return {team: retval}
 
@@ -195,13 +195,13 @@ if __name__ == '__main__':
         reader = csv.DictReader(f)
         for line in reader:
             # Make the dict a bit shorter, at least for now
-            shortDict = extractDict(['Date', 'HomeTeam', 'AwayTeam', 'FTR', 'FTHG', 'FTAG'], line)
-            if shortDict['Date'] == '':
+            shortDict = extractDict([db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG], line)
+            if shortDict[db.DATE] == '':
                 continue
             try:
-                shortDict['Date'] = datetime.strptime(shortDict['Date'], '%d/%m/%y').strftime('%y/%m/%d')
+                shortDict[db.DATE] = datetime.strptime(shortDict[db.DATE], '%d/%m/%y').strftime('%y/%m/%d')
             except:
-                shortDict['Date'] = datetime.strptime(shortDict['Date'], '%d/%m/%Y').strftime('%y/%m/%d')
+                shortDict[db.DATE] = datetime.strptime(shortDict[db.DATE], '%d/%m/%Y').strftime('%y/%m/%d')
 
             matches[(key1, key2)].append(shortDict)
         f.close()
@@ -214,7 +214,7 @@ if __name__ == '__main__':
 
     # Get list items in a flat list
     E0 = [v for (k, v) in matches.iteritems() if k[0] == 'E0']
-    l2 = sorted([item for sublist in E0 for item in sublist], key=lambda k: k['Date'])
+    l2 = sorted([item for sublist in E0 for item in sublist], key=lambda k: k[db.DATE])
 
     #with open('test.csv', 'wt') as out:
     #    pprint(l2, stream=out)
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     #pprint(l2)
     seen = ()
     tmp = []
-    tmp = [x["HomeTeam"] for x in l2]
+    tmp = [x[db.HOME_TEAM] for x in l2]
     teams = []
     teams = sorted(list(set(tmp)))
     #    print str(teams)
