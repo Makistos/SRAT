@@ -13,7 +13,7 @@ import db
 #import collections
 
 FIELDS = [db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG]
-FORM_TABLE = [3, 6, 10, 15] # Match lengths to which calculate the form parameters
+FORM_TABLE = [2, 4, 6, 10, 15]  # Match lengths to which calculate the form parameters
 DATE_FORMAT = '%y/%m/%d'
 matches = {}
 matchFiles = {}
@@ -180,7 +180,8 @@ def versus_team(l, team):
 
 
 if __name__ == '__main__':
-    open_files("")
+    #open_files("")
+    open_files(["E02013-2014.csv"])
 
     l = flatten_dict(matches)
 
@@ -213,17 +214,38 @@ if __name__ == '__main__':
             [m for m in l2 if m[db.AWAY_TEAM] == match[db.HOME_TEAM] or m[db.AWAY_TEAM] == match[db.AWAY_TEAM]],
             match[db.DATE])
 
-        hmatches = team_matches_home(hteam_matches, match[db.HOME_TEAM])
-        amatches = team_matches_away(ateam_matches, match[db.AWAY_TEAM])
+        hteam_home = team_matches_home(hteam_matches, match[db.HOME_TEAM])
+        hteam_away = team_matches_away(hteam_matches, match[db.HOME_TEAM])
+        ateam_home = team_matches_home(ateam_matches, match[db.AWAY_TEAM])
+        ateam_away = team_matches_away(ateam_matches, match[db.AWAY_TEAM])
+        last_x = lambda x, y: x[-(y+1):-1]
+        sum_x = lambda x, y, z: int(field_sum(last_x(x, y), z))
+        count_x = lambda x, y, z, w: int(field_count(last_x(x, y), z, w))
+        date_sort = lambda x: sorted(x, key=lambda k: k[db.DATE])
         for f in FORM_TABLE:
-            # Home tam
-            match[db.FTHG + str(f)] = int(field_sum(hmatches[-f:], db.FTHG))
-            match[db.HW + str(f)] = int(field_count(hmatches[-f:], db.FTR, 'H'))
-            match[db.HD + str(f)] = int(field_count(hmatches[-f:], db.FTR, 'D'))
-            # Away team
-            match[db.FTAG + str(f)] = int(field_sum(amatches[-f:], db.FTAG))
-            match[db.AW + str(f)] = int(field_count(amatches[-f:], db.FTR, 'A'))
-            match[db.AD + str(f)] = int(field_count(amatches[-f:], db.FTR, 'D'))
+            # Home team #
+            # Home matches only
+            match[db.HW + str(f)] = count_x(hteam_home, f, db.FTR, 'H')
+            match[db.HD + str(f)] = count_x(hteam_home, f, db.FTR, 'D')
+            match[db.FTHGS + str(f)] = sum_x(hteam_home, f, db.FTHG)
+            match[db.FTHGC + str(f)] = sum_x(hteam_home, f, db.FTAG)
+            # Home and away matches
+            # Fix next line (counts wrong number of matches):
+            match[db.THW + str(f)] = match[db.HW + str(f)] + field_count(last_x(hteam_away, f), db.FTR, 'A')
+            match[db.THD + str(f)] = field_count(
+                last_x(date_sort(hteam_home + hteam_away), f), db.FTR, 'D')
+
+            # Away team #
+            # Away matches only
+            match[db.AW + str(f)] = count_x(ateam_away, f, db.FTR, 'A')
+            match[db.AD + str(f)] = count_x(ateam_home, f, db.FTR, 'D')
+            match[db.FTAGS + str(f)] = sum_x(ateam_home, f, db.FTAG)
+            match[db.FTAGC + str(f)] = sum_x(ateam_home, f, db.FTHG)
+            # Home and away matches
+            # Fix next line (counts wrong number of matches):
+            match[db.TAW + str(f)] = match[db.AW + str(f)] + field_count(last_x(ateam_away, f), db.FTR, 'W')
+            match[db.TAD + str(f)] = field_count(
+                last_x(date_sort(ateam_home + ateam_away), f), db.FTR, 'D')
 
     pprint(list_nmatches_before(l2, '14/04/15', 20))
 
