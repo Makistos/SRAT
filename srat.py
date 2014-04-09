@@ -12,6 +12,9 @@ import db
 #import itertools as IT
 #import collections
 
+FIELDS = [db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG]
+FORM_TABLE = [3, 6, 10, 15] # Match lengths to which calculate the form parameters
+DATE_FORMAT = '%y/%m/%d'
 matches = {}
 matchFiles = {}
 seasonStatsDict = {}
@@ -20,44 +23,50 @@ seasonStatsDict = {}
 extractDict = lambda keys, dict: reduce(lambda x, y: x.update({y[0]: y[1]}) or x,
                                         map(None, keys, map(dict.get, keys)), {})
 
+flatten_dict = lambda d: [item for sublist in d.itervalues() for item in sublist]
+filter_rows = lambda li, field, value: [line for line in li if line[field] == value]
+field_sum = lambda li, field: sum(float(line[field]) for line in li)
+field_count = lambda li, field, value: len([line for line in li if line[field] == value])
+team_matches_home = lambda li, team: [m for m in li if m[db.HOME_TEAM] == team]
+team_matches_away = lambda li, team: [m for m in li if m[db.AWAY_TEAM] == team]
+team_matches = lambda li, team: team_matches_home(li, team) + team_matches_away(li, team)
+list_nmatches_before = \
+    lambda li, date, c: [m for m in li
+                               if datetime.strptime(m[db.DATE], DATE_FORMAT) < datetime.strptime(date, DATE_FORMAT)][-c:]
+list_matches_before = \
+    lambda li, date: [m for m in li
+                         if datetime.strptime(m[db.DATE], DATE_FORMAT) < datetime.strptime(date, DATE_FORMAT)]
+list_matches_after = \
+    lambda li, date: [m for m in li
+                         if datetime.strptime(m[db.DATE], DATE_FORMAT) > datetime.strptime(date, DATE_FORMAT)]
+
+#def field_avg(lst, field):
+#    s = 0
+#    for line in lst:
+#        if isinstance(float(line[field]), float):
+#            s += float(line[field])
+#    retval = s / len(lst)
+#    return retval
+#
+field_avg = lambda li, field: sum([float(line[field]) for line in li if isinstance(float(line[field]), float)]) / \
+                              len([1 for line in li if isinstance(float(line[field]), float)])
 
 def print_matches(match_list):
     for match in match_list:
         print("%s: (%d->%d) %s %d - %d %s (%d->%d)" %
               (match[db.DATE],
-              round(float(match[db.HE]) - float(match[db.HEC]), 2),
-              round(float(match[db.HE]), 2),
-              match[db.HOME_TEAM],
-              int(match[db.FTHG]),
-              int(match[db.FTAG]),
-              match[db.AWAY_TEAM],
-              round(float(match[db.AE]) - float(match[db.AEC]), 2),
-              round(float(match[db.AE]), 2)))
+               round(float(match[db.HE]) - float(match[db.HEC]), 2),
+               round(float(match[db.HE]), 2),
+               match[db.HOME_TEAM],
+               int(match[db.FTHG]),
+               int(match[db.FTAG]),
+               match[db.AWAY_TEAM],
+               round(float(match[db.AE]) - float(match[db.AEC]), 2),
+               round(float(match[db.AE]), 2)))
 
 
 def flatten_list():
     pass
-
-
-def flatten_dict(m):
-    tmp = []
-    for ((key1, key2), value) in m.iteritems():
-        tmp.append(value)
-
-    # Flatten lists:
-    ret = []
-    ret = [item for sublist in tmp for item in sublist]
-    return ret
-
-#    iterable = iter(iterable)
-#    remainder = iterable
-#    while True:
-#        first = next(remainder)
-#        if isinstance(first, ltypes) and not isinstance(first, basestring):
-#            remainder = IT.chain(first, remainder)
-#            first = next(iter(first))
-#        else:
-#            yield first
 
 
 def open_files(files):
@@ -75,40 +84,24 @@ def open_files(files):
         matchObj = re.match(r'(.+)(\d{4})\-(\d{4})(.*)', c)
         matchFiles[(matchObj.group(1), matchObj.group(2))] = c
 
+    for ((key1, key2), name) in matchFiles.iteritems():
+        f = open('csv/' + name)
+        matches[(key1, key2)] = []
+        reader = csv.DictReader(f)
+        for line in reader:
+            # Make the dict a bit shorter, at least for now
+            shortDict = extractDict(FIELDS, line)
+            if shortDict[db.DATE] == '':
+                continue
+            try:
+                shortDict[db.DATE] = datetime.strptime(shortDict[db.DATE], '%d/%m/%y').strftime(DATE_FORMAT)
+            except:
+                shortDict[db.DATE] = datetime.strptime(shortDict[db.DATE], '%d/%m/%Y').strftime(DATE_FORMAT)
 
-def field_avg(lst, fieldName):
-    retval = 0.0
-    s = 0
-    try:
-        for line in lst:
-            s += float(line[fieldName])
-        #        retval = sum([float(line[fieldName]) for line in lst]) / len(l)
-    except ValueError:
-        print "ValueError! Value for " + fieldName + " is: " + str(line[fieldName])
-        #print line
-        #        print "HomeTeam: " + str(line["HomeTeam"]) + ", AwayTeam: " + str(line["AwayTeam"])
-        retval = 0.0
-    retval = s / len(l)
-    return retval
-
-
-def field_sum(l, fieldName):
-    return sum(line[fieldName] for line in l)
+            matches[(key1, key2)].append(shortDict)
+        f.close()
 
 
-def field_count(l, fieldName, value):
-    return len([line for line in l if line[fieldName] == value])
-
-
-def filter_rows(l, fieldName, value):
-    return [line for line in l if line[fieldName] == value]
-
-
-def list_team_matches_before(l, date, team, num):
-    #retval = [m for m in l if (m["HomeTeam"] == team or m["AwayTeam"] == team)]
-    retval = [m for m in l if datetime.strptime(m[db.DATE], '%d/%m/%y') < datetime.strptime(date, '%d/%m/%y') and (
-        m[db.HOME_TEAM] == team or m[db.AWAY_TEAM] == team)]
-    return retval
 
 
 def season_stats(l):
@@ -189,69 +182,51 @@ def versus_team(l, team):
 if __name__ == '__main__':
     open_files("")
 
-    for ((key1, key2), name) in matchFiles.iteritems():
-        f = open('csv/' + name)
-        matches[(key1, key2)] = []
-        reader = csv.DictReader(f)
-        for line in reader:
-            # Make the dict a bit shorter, at least for now
-            shortDict = extractDict([db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG], line)
-            if shortDict[db.DATE] == '':
-                continue
-            try:
-                shortDict[db.DATE] = datetime.strptime(shortDict[db.DATE], '%d/%m/%y').strftime('%y/%m/%d')
-            except:
-                shortDict[db.DATE] = datetime.strptime(shortDict[db.DATE], '%d/%m/%Y').strftime('%y/%m/%d')
-
-            matches[(key1, key2)].append(shortDict)
-        f.close()
-
-    #for match in matches[("E0", "2010")]:
-    #    pprint(shortDict)
-
     l = flatten_dict(matches)
-    #print "Tot: " + str(len(l))
 
     # Get list items in a flat list
     E0 = [v for (k, v) in matches.iteritems() if k[0] == 'E0']
     l2 = sorted([item for sublist in E0 for item in sublist], key=lambda k: k[db.DATE])
 
-    #with open('test.csv', 'wt') as out:
-    #    pprint(l2, stream=out)
-    #print "E0 tot: " + str(len(l2))
-    #with open('test.csv', 'wt') as out:
-    #    pprint(matches, stream=out)
-
     print "Stats for entire data set: "
     season_stats(matches)
 
     tmp = [v for (k, v) in matches.iteritems() if k[0] == 'E0']
-    #pprint(tmp)
-    #print "len: " + str(len(tmp))
-    #versusTable = versusTeam([v for (k,v) in matches.iteritems() if k[0] == 'E0'], "Everton")
-    #pprint(l2)
-    seen = ()
     tmp = []
     tmp = [x[db.HOME_TEAM] for x in l2]
     teams = []
     teams = sorted(list(set(tmp)))
-    #    print str(teams)
     versusTable = map(lambda x: versus_team(l2, x), teams)
-    #    pprint(versusTable)
 
     elo_calculate(l2)
 
-    print_matches(l2)
+#    print_matches(l2)
 
-    #pprint(seasonStatsDict)
-    #print sum([float(match["FTHG"]) for match in matches]) / len(matches)
-    #print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "H")
-    #print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "A")
-    #print fieldCount(filterRows(matches[("E0", "2012")], "HomeTeam", "Everton"), "FTR", "D")
-    #e = listTeamMatchesBefore(matches[("E0", "2012")], '23/03/14', 'Everton', 6)
-    #print "All matches for season 2012 (" + str(len(e)) + ")"
-    #for m in e:
-    #    print m["Date"] + ": " + m["HomeTeam"] + "-" + m["AwayTeam"]
-    #
-    ## Calculate number of home wins for team
-    #print "Home wins for team in database: " + str(fieldCount(filterRows(m2, "HomeTeam", "Everton"), "FTR", "H"))
+    pprint(seasonStatsDict)
+
+    for match in l2:
+        # Find all matches for home & away teams. This will filter the list down a lot for quicker handling
+        hteam_matches = list_matches_before(
+            [m for m in l2 if m[db.HOME_TEAM] == match[db.HOME_TEAM] or m[db.HOME_TEAM] == match[db.AWAY_TEAM]],
+            match[db.DATE])
+        ateam_matches = list_matches_before(
+            [m for m in l2 if m[db.AWAY_TEAM] == match[db.HOME_TEAM] or m[db.AWAY_TEAM] == match[db.AWAY_TEAM]],
+            match[db.DATE])
+
+        hmatches = team_matches_home(hteam_matches, match[db.HOME_TEAM])
+        amatches = team_matches_away(ateam_matches, match[db.AWAY_TEAM])
+        for f in FORM_TABLE:
+            # Home tam
+            match[db.FTHG + str(f)] = int(field_sum(hmatches[-f:], db.FTHG))
+            match[db.HW + str(f)] = int(field_count(hmatches[-f:], db.FTR, 'H'))
+            match[db.HD + str(f)] = int(field_count(hmatches[-f:], db.FTR, 'D'))
+            # Away team
+            match[db.FTAG + str(f)] = int(field_sum(amatches[-f:], db.FTAG))
+            match[db.AW + str(f)] = int(field_count(amatches[-f:], db.FTR, 'A'))
+            match[db.AD + str(f)] = int(field_count(amatches[-f:], db.FTR, 'D'))
+
+    pprint(list_nmatches_before(l2, '14/04/15', 20))
+
+    with open('test.csv', 'wt') as out:
+        pprint([m for m in l2 if m[db.HOME_TEAM] == 'Everton'], stream=out)
+

@@ -28,3 +28,16 @@ HY = 'HY'               # Home team yellow cards
 AY = 'AY'               # Away team yellow cards
 HR = 'HR'               # Home team red cards
 AR = 'AR'               # Away team red cards
+
+HW = 'HW'             # Home wins for last x (for home team)
+HD = 'HD'             # Home draws for last x (for home team)
+THW = 'THW'           # Total wins for home team in last x
+THD = 'THD'           # Total draws for home team in last x
+AW = 'AW'             # Away wins for last x (for away team)
+AD = 'AD'             # Away draws for last x (for away team)
+TAW = 'THW'           # Total wins for away team in last x
+TAD = 'THD'           # Total draws for away team in last x
+FTHG = 'FTHG'         # Full-time goals for last x home games (home team)
+FTAG = 'FTAG'         # Full-time goals for last x away games (away team)
+FTTHG = 'FTTHG'       # Total number of goals scored by home tem in last x
+FTTAG = 'FTTAG'       # Total number of goals scored by away team in last x
