@@ -230,8 +230,9 @@ if __name__ == '__main__':
             match[db.FTHGS + str(f)] = sum_x(hteam_home, f, db.FTHG)
             match[db.FTHGC + str(f)] = sum_x(hteam_home, f, db.FTAG)
             # Home and away matches
-            # Fix next line (counts wrong number of matches):
-            match[db.THW + str(f)] = match[db.HW + str(f)] + field_count(last_x(hteam_away, f), db.FTR, 'A')
+            match[db.THW + str(f)] = len([m for m in last_x(date_sort(hteam_home + hteam_away), f)
+                if ((m[db.HOME_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'W') or
+                    (m[db.AWAY_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'A'))])
             match[db.THD + str(f)] = field_count(
                 last_x(date_sort(hteam_home + hteam_away), f), db.FTR, 'D')
 
@@ -242,7 +243,9 @@ if __name__ == '__main__':
             match[db.FTAGS + str(f)] = sum_x(ateam_home, f, db.FTAG)
             match[db.FTAGC + str(f)] = sum_x(ateam_home, f, db.FTHG)
             # Home and away matches
-            # Fix next line (counts wrong number of matches):
+            match[db.THW + str(f)] = len([m for m in last_x(date_sort(hteam_home + hteam_away), f)
+                                          if ((m[db.HOME_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'W') or
+                                              (m[db.AWAY_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'A'))])
             match[db.TAW + str(f)] = match[db.AW + str(f)] + field_count(last_x(ateam_away, f), db.FTR, 'W')
             match[db.TAD + str(f)] = field_count(
                 last_x(date_sort(ateam_home + ateam_away), f), db.FTR, 'D')
