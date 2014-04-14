@@ -276,7 +276,11 @@ if __name__ == '__main__':
 #    pprint(nmatches_before(matches_bydate, '14/04/15', 20))
 
     e = [x for x in matches_home(matches_bydate, 'Everton')]
-    pprint(e)
-    with open('test.csv', 'wt') as out:
-        pprint([m for m in matches_bydate if m[db.HOME_TEAM] == 'Everton'], stream=out)
+#    pprint(e)
+#    with open('test.csv', 'wt') as out:
+#        pprint([m for m in matches_bydate if m[db.HOME_TEAM] == 'Everton'], stream=out)
+
+#    db.to_db(e, 'test.csv', 'csv')
+    pprint([extract_dict(db.DB_FIELDS, row) for row in e])
+    db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
 

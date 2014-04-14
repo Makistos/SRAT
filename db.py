@@ -1,5 +1,8 @@
 __author__ = 'mep'
 
+import csv
+from prettytable import PrettyTable
+
 DATE = 'Date'           # Date, this is fixed to format yy/mm/dd for easier sorting
 HOME_TEAM = 'HomeTeam'
 AWAY_TEAM = 'AwayTeam'
@@ -45,3 +48,30 @@ FTTHGS = 'FTTHGS'       # Total number of goals scored by home team in last x
 FTTHGC = 'FTTHGC'       # Total number of goals conceded by home team in last x
 FTTAGS = 'FTTAGS'       # Total number of goals scored by away team in last x
 FTTAGC = 'FTTAGC'       # Total number of goals conceded by away tem in last x
+
+DB_FIELDS = ['Date', 'HomeTeam', 'AwayTeam', 'FTR', 'FTHG', 'FTAG', 'HE', 'AE']
+
+def to_db(data, file_name, output_type='text'):
+    '''
+    Saves the data in the parameter to "type" where type can be "text", "db" or "csv".
+    '''
+
+    if output_type == 'text':
+        tbl = PrettyTable(DB_FIELDS)
+        for v in data:
+            row = []
+            for f in DB_FIELDS:
+                row.append(v[f])
+            tbl.add_row(row)
+
+        f = open(file_name, 'w')
+        f.write(tbl.get_string())
+    elif output_type == 'db':
+        pass
+    elif output_type == 'csv':
+        csvfile = open(file_name, 'wb')
+        writer = csv.DictWriter(csvfile, delimiter=',', fieldnames=DB_FIELDS, restval='', extrasaction='ignore', dialect='excel')
+        writer.writeheader()
+        map(writer.writerow, data)
+    else:
+        print("Unknown writer type %s." % output_type)
