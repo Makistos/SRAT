@@ -13,8 +13,7 @@ import db
 #import collections
 from itertools import imap
 
-FIELDS = [db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG]
-FORM_TABLE = [2, 4, 6, 10, 15]  # Match lengths to which calculate the form parameters
+FIELDS = [db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG, db.HS, db.HST, db.AS, db.AST]
 DATE_FORMAT = '%y/%m/%d'
 matches = {}
 season_stats_dict = {}
@@ -113,7 +112,7 @@ def open_files(files):
         matches[(key1, key2)] = []
         reader = csv.DictReader(f)
         for line in reader:
-            # Make the dict a bit shorter, at least for now
+            # Make the dict a bit shorter, at least for now. This will be removed later.
             shortDict = extract_dict(FIELDS, line)
             if shortDict[db.DATE] == '':
                 continue
@@ -245,13 +244,15 @@ if __name__ == '__main__':
         sum_x = lambda x, y, z: int(field_sum(last_x(x, y), z))
         count_x = lambda x, y, z, w: int(field_count(last_x(x, y), z, w))
         date_sort = lambda x: sorted(x, key=lambda k: k[db.DATE])
-        for f in FORM_TABLE:
+        for f in db.FORM_TABLE:
             # Home team #
             # Home matches only
             match[db.HW + str(f)] = count_x(hteam_home, f, db.FTR, 'H')
             match[db.HD + str(f)] = count_x(hteam_home, f, db.FTR, 'D')
             match[db.FTHGS + str(f)] = sum_x(hteam_home, f, db.FTHG)
             match[db.FTHGC + str(f)] = sum_x(hteam_home, f, db.FTAG)
+            match[db.HS + str(f)] = sum_x(hteam_home, f, db.HS)
+            match[db.HST + str(f)] = sum_x(hteam_home, f, db.HST)
             # Home and away matches
             match[db.THW + str(f)] = len([m for m in last_x(date_sort(hteam_home + hteam_away), f)
                 if ((m[db.HOME_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'W') or
@@ -265,6 +266,8 @@ if __name__ == '__main__':
             match[db.AD + str(f)] = count_x(ateam_away, f, db.FTR, 'D')
             match[db.FTAGS + str(f)] = sum_x(ateam_away, f, db.FTAG)
             match[db.FTAGC + str(f)] = sum_x(ateam_away, f, db.FTHG)
+            match[db.AS + str(f)] = sum_x(hteam_home, f, db.AS)
+            match[db.AST + str(f)] = sum_x(hteam_home, f, db.AST)
             # Home and away matches
             match[db.THW + str(f)] = len([m for m in last_x(date_sort(hteam_home + hteam_away), f)
                                           if ((m[db.HOME_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'W') or
