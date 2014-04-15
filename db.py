@@ -2,6 +2,7 @@ __author__ = 'mep'
 
 import csv
 from prettytable import PrettyTable
+from itertools import chain
 
 DATE = 'Date'           # Date, this is fixed to format yy/mm/dd for easier sorting
 HOME_TEAM = 'HomeTeam'
@@ -49,21 +50,22 @@ FTTHGC = 'FTTHGC'       # Total number of goals conceded by home team in last x
 FTTAGS = 'FTTAGS'       # Total number of goals scored by away team in last x
 FTTAGC = 'FTTAGC'       # Total number of goals conceded by away tem in last x
 
+# Fields that are written to db/txt/csv
 DB_FIELDS = ['Date', 'HomeTeam', 'AwayTeam', 'FTR', 'FTHG', 'FTAG', 'HE', 'AE']
 
+
+def map_value(data):
+    for f in DB_FIELDS:
+        yield data[f]
+
 def to_db(data, file_name, output_type='text'):
-    '''
+    """
     Saves the data in the parameter to "type" where type can be "text", "db" or "csv".
-    '''
+    """
 
     if output_type == 'text':
         tbl = PrettyTable(DB_FIELDS)
-        for v in data:
-            row = []
-            for f in DB_FIELDS:
-                row.append(v[f])
-            tbl.add_row(row)
-
+        map(tbl.add_row, [[x for x in map_value(d)] for d in data])
         f = open(file_name, 'w')
         f.write(tbl.get_string())
     elif output_type == 'db':

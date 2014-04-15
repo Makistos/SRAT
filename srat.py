@@ -280,7 +280,8 @@ if __name__ == '__main__':
 #    with open('test.csv', 'wt') as out:
 #        pprint([m for m in matches_bydate if m[db.HOME_TEAM] == 'Everton'], stream=out)
 
-#    db.to_db(e, 'test.csv', 'csv')
+    db.to_db(e, 'test.csv', 'text')
     pprint([extract_dict(db.DB_FIELDS, row) for row in e])
-    db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
+#    db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
+    #db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
 
