@@ -8,7 +8,7 @@ from os.path import isfile, join
 import re
 from elo import elo_calculate
 import db
-
+from decimal import *
 #import itertools as IT
 #import collections
 from itertools import imap
@@ -26,6 +26,9 @@ flatten_dict = lambda d: [item for sublist in d.itervalues() for item in sublist
 filter_rows = lambda li, field, value: [line for line in li if line[field] == value]
 field_sum = lambda li, field: sum(float(line[field]) for line in li)
 field_count = lambda li, field, value: len([line for line in li if line[field] == value])
+field_avg = lambda li, field: field_sum(li, field) / len(li)
+
+
 def matches_home(li, team):
     for match in li:
         if match[db.HOME_TEAM] == team:
@@ -38,7 +41,7 @@ def matches_away(li, team):
         if match[db.AWAY_TEAM] == team:
             yield match
 
-matches_all = lambda li, team: matches_home(li, team) + matches_away(li, team)
+matches_all = lambda li, team: [x for x in matches_home(li, team)] + [x for x in matches_away(li, team)]
 
 
 nmatches_before = \
@@ -128,21 +131,15 @@ def open_files(files):
 
 
 def season_stats(l):
+    getcontext().prec=10
     for (key, season) in l.iteritems():
-        key2 = key + ('HWIN',)
-        try:
-            season_stats_dict[key2] = str("%.2f" % (float(field_count(season, db.FTR, "H")) / len(season) * 100))
-        except ZeroDivisionError:
-            print "Division by zero: " + str(key2)
-        key2 = key + ('AWIN',)
-        season_stats_dict[key2] = str("%.2f" % (float(field_count(season, db.FTR, "A")) / len(season) * 100))
-        key2 = key + ('DRAW',)
-        season_stats_dict[key2] = str("%.2f" % (float(field_count(season, db.FTR, "D")) / len(season) * 100))
-        key2 = key + ('HGOALS',)
-        season_stats_dict[key2] = str(field_avg(season, db.FTHG))
-        key2 = key + ('AGOALS',)
-        season_stats_dict[key2] = str(field_avg(season, db.FTAG))
-
+        d = {}
+        d['HWIN'] = round(Decimal(float(field_count(season, db.FTR, "H")) / len(season) * 100), 2)
+        d['AWIN'] = round(Decimal(float(field_count(season, db.FTR, "A")) / len(season) * 100), 2)
+        d['DRAW'] = round(Decimal(float(field_count(season, db.FTR, "D")) / len(season) * 100), 2)
+        d['HGOALS'] = round(Decimal(field_avg(season, db.FTHG)), 2)
+        d['AGOALS'] = round(Decimal(field_avg(season, db.FTAG)), 2)
+        season_stats_dict[key] = d
 
 def homematch_stats(m, record):
     retval = record
@@ -236,12 +233,15 @@ if __name__ == '__main__':
             [m for m in matches_bydate if m[db.AWAY_TEAM] == match[db.HOME_TEAM] or m[db.AWAY_TEAM] == match[db.AWAY_TEAM]],
             match[db.DATE])
 
+        match[db.MONTH] = int(datetime.strptime(match[db.DATE], DATE_FORMAT).strftime("%m"))
+        match[db.WEEKDAY] = int(datetime.strptime(match[db.DATE], DATE_FORMAT).strftime("%w"))
         hteam_home = [x for x in matches_home(hteam_matches, match[db.HOME_TEAM])]
         hteam_away = [x for x in matches_away(hteam_matches, match[db.HOME_TEAM])]
         ateam_home = [x for x in matches_home(ateam_matches, match[db.AWAY_TEAM])]
         ateam_away = [x for x in matches_away(ateam_matches, match[db.AWAY_TEAM])]
         last_x = lambda x, y: x[-(y+1):-1]
-        sum_x = lambda x, y, z: int(field_sum(last_x(x, y), z))
+        sum_x = lambda x, y, z: field_sum(last_x(x, y), z)
+        avg_x = lambda x,y: x / float(y)
         count_x = lambda x, y, z, w: int(field_count(last_x(x, y), z, w))
         date_sort = lambda x: sorted(x, key=lambda k: k[db.DATE])
         for f in db.FORM_TABLE:
@@ -249,10 +249,10 @@ if __name__ == '__main__':
             # Home matches only
             match[db.HW + str(f)] = count_x(hteam_home, f, db.FTR, 'H')
             match[db.HD + str(f)] = count_x(hteam_home, f, db.FTR, 'D')
-            match[db.FTHGS + str(f)] = sum_x(hteam_home, f, db.FTHG)
-            match[db.FTHGC + str(f)] = sum_x(hteam_home, f, db.FTAG)
-            match[db.HS + str(f)] = sum_x(hteam_home, f, db.HS)
-            match[db.HST + str(f)] = sum_x(hteam_home, f, db.HST)
+            match[db.FTHGS + str(f)] = avg_x(sum_x(hteam_home, f, db.FTHG), f)
+            match[db.FTHGC + str(f)] = avg_x(sum_x(hteam_home, f, db.FTAG), f)
+            match[db.HS + str(f)] = avg_x(sum_x(hteam_home, f, db.HS), f)
+            match[db.HST + str(f)] = avg_x(sum_x(hteam_home, f, db.HST), f)
             # Home and away matches
             match[db.THW + str(f)] = len([m for m in last_x(date_sort(hteam_home + hteam_away), f)
                 if ((m[db.HOME_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'W') or
@@ -264,10 +264,10 @@ if __name__ == '__main__':
             # Away matches only
             match[db.AW + str(f)] = count_x(ateam_away, f, db.FTR, 'A')
             match[db.AD + str(f)] = count_x(ateam_away, f, db.FTR, 'D')
-            match[db.FTAGS + str(f)] = sum_x(ateam_away, f, db.FTAG)
-            match[db.FTAGC + str(f)] = sum_x(ateam_away, f, db.FTHG)
-            match[db.AS + str(f)] = sum_x(hteam_home, f, db.AS)
-            match[db.AST + str(f)] = sum_x(hteam_home, f, db.AST)
+            match[db.FTAGS + str(f)] = avg_x(sum_x(ateam_away, f, db.FTAG), f)
+            match[db.FTAGC + str(f)] = avg_x(sum_x(ateam_away, f, db.FTHG),f )
+            match[db.AS + str(f)] = avg_x(sum_x(hteam_home, f, db.AS), f)
+            match[db.AST + str(f)] = avg_x(sum_x(hteam_home, f, db.AST), f)
             # Home and away matches
             match[db.THW + str(f)] = len([m for m in last_x(date_sort(hteam_home + hteam_away), f)
                                           if ((m[db.HOME_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'W') or
@@ -278,13 +278,16 @@ if __name__ == '__main__':
 
 #    pprint(nmatches_before(matches_bydate, '14/04/15', 20))
 
-    e = [x for x in matches_home(matches_bydate, 'Everton')]
+    e = sorted([x for x in matches_all(matches_bydate, 'Everton')], key=lambda k: k[db.DATE])
 #    pprint(e)
 #    with open('test.csv', 'wt') as out:
 #        pprint([m for m in matches_bydate if m[db.HOME_TEAM] == 'Everton'], stream=out)
 
-    db.to_db(e, 'test.csv', 'text')
-    pprint([extract_dict(db.DB_FIELDS, row) for row in e])
+    db.matches_to_db(e, 'test.csv', 'text')
+    #pprint([extract_dict(db.DB_FIELDS, row) for row in e])
+    db.matches_to_db(e, 'test.txt', 'text', do_filtering=True)
+    db.season_to_db(season_stats_dict, 'test2.txt', output_type='text')
+    db.season_to_db(season_stats_dict, 'test2.csv', output_type='csv')
 #    db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
     #db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
 

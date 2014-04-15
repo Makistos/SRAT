@@ -3,11 +3,15 @@ __author__ = 'mep'
 import csv
 from prettytable import PrettyTable
 
+# Match data
+
 DATE = 'Date'           # Date, this is fixed to format yy/mm/dd for easier sorting
 HOME_TEAM = 'HomeTeam'
 AWAY_TEAM = 'AwayTeam'
 REFEREE = 'Referee'     # Referee name
 ATTENDANCE = 'ATTENDANCE'
+MONTH = 'MONTH'         # Week the match was played on
+WEEKDAY = 'WEEKDAY'     # Weekday the match was played on
 FTR = 'FTR'             # Full-time result
 FTHG = 'FTHG'           # Full-time home goals
 FTAG = 'FTAG'           # Full-time away goals
@@ -49,19 +53,34 @@ FTTHGC = 'FTTHGC'       # Total number of goals conceded by home team in last x
 FTTAGS = 'FTTAGS'       # Total number of goals scored by away team in last x
 FTTAGC = 'FTTAGC'       # Total number of goals conceded by away tem in last x
 
+# Season data
+SERIES = 'SERIES'
+SEASON = 'SEASON'
+HWIN = 'HWIN'
+AWIN = 'AWIN'
+DRAW = 'DRAW'
+HGOALS = 'HGOALS'
+AGOALS = 'AGOALS'
+
 FORM_TABLE = [2, 4, 6, 10, 15]  # Match lengths to which to calculate the form parameters
 
 # Fields that are written to db/txt/csv
 ALL_FIELDS = [DATE, HOME_TEAM, AWAY_TEAM, FTR, FTHG, FTAG, HS, HST, AS, AST]
-TXT_FIELDS = [DATE, HOME_TEAM, AWAY_TEAM, FTR, FTHG, FTAG, HE, AE]
+TXT_FIELDS = [DATE, FTR, HOME_TEAM, FTHG, FTAG, AWAY_TEAM, HE, AE, MONTH, WEEKDAY]
 DB_FIELDS = ALL_FIELDS
 CSV_FIELDS = TXT_FIELDS
 
+SEASON_DB_FIELDS = [SERIES, SEASON, HWIN, AWIN, DRAW, HGOALS, AGOALS]
+SEASON_TXT_FIELDS = [SERIES, SEASON, HWIN, AWIN, DRAW, HGOALS, AGOALS]
+SEASON_CSV_FIELDS = [SERIES, SEASON, HWIN, AWIN, DRAW, HGOALS, AGOALS]
+
 def map_value(data, field_map):
     for f in field_map:
-        yield data[f]
+        if f in data:
+            yield data[f]
 
-def to_db(data, file_name, output_type='text', do_filtering=False):
+
+def matches_to_db(data, filename, output_type='text', do_filtering=False):
     """
     Saves the data in the parameter to "type" where type can be "text", "db" or "csv".
     """
@@ -74,14 +93,48 @@ def to_db(data, file_name, output_type='text', do_filtering=False):
     if output_type == 'text':
         tbl = PrettyTable(fields)
         map(tbl.add_row, [[x for x in map_value(d, fields)] for d in data])
-        f = open(file_name, 'w')
+        f = open(filename, 'w')
         f.write(tbl.get_string())
     elif output_type == 'db':
         pass
     elif output_type == 'csv':
-        csvfile = open(file_name, 'wb')
+        csvfile = open(filename, 'w')
         writer = csv.DictWriter(csvfile, delimiter=',', fieldnames=fields, restval='', extrasaction='ignore', dialect='excel')
         writer.writeheader()
         map(writer.writerow, data)
     else:
         print("Unknown writer type %s." % output_type)
+
+
+def season_to_db(data, filename, output_type='text'):
+
+    l = []
+
+    if output_type == 'text':
+        fields = SEASON_TXT_FIELDS
+    elif output_type == 'db':
+        fields = SEASON_DB_FIELDS
+    else:
+        fields = SEASON_CSV_FIELDS
+
+    for ((k, v), d) in data.iteritems():
+        l.append(list([k, v]) + [x for x in map_value(d, fields)])
+
+    if output_type == 'text':
+        tbl = PrettyTable(fields)
+        map(tbl.add_row, l)
+        f = open(filename, 'w')
+        f.write(tbl.get_string())
+    elif output_type == 'db':
+        pass
+    elif output_type == 'csv':
+        l.insert(0, fields)    # Add header
+        csvfile = open(filename, 'w')
+        writer = csv.writer(csvfile, delimiter=',')
+        writer.writerows(l)
+    else:
+        print("Unknown writer type %s." % output_type)
+
+
+def versus_to_db(data,filename, output_type='text'):
+    pass
