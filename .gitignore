@@ -39,5 +39,5 @@ nosetests.xml
 .idea/
 .~lock*
 csv/*
-test.*
+test*.*
 

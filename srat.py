@@ -27,7 +27,8 @@ filter_rows = lambda li, field, value: [line for line in li if line[field] == va
 field_sum = lambda li, field: sum(float(line[field]) for line in li)
 field_count = lambda li, field, value: len([line for line in li if line[field] == value])
 field_avg = lambda li, field: field_sum(li, field) / len(li)
-
+percent = lambda value, count: round2((float(value) / count) * 100)
+round2 = lambda value: round(Decimal(float(value)), 2)
 
 def matches_home(li, team):
     for match in li:
@@ -128,18 +129,30 @@ def open_files(files):
         f.close()
 
 
+def calc_result_related(matches, result):
+    result['HWIN'] = percent(field_count(matches, db.FTR, "H"), len(matches))
+    result['AWIN'] = percent(field_count(matches, db.FTR, "A"), len(matches))
+    result['DRAW'] = percent(field_count(matches, db.FTR, "D"), len(matches))
+
+
+def calc_goal_related(matches, result):
+    result['HGOALS'] = round2(field_avg(matches, db.FTHG))
+    result['AGOALS'] = round2(field_avg(matches, db.FTAG))
+    result['NOHGOALS'] = percent(field_count(matches, db.FTHG, '0'), len(matches))
+    result['NOAGOALS'] = percent(field_count(matches, db.FTAG, '0'), len(matches))
 
 
 def season_stats(l):
-    getcontext().prec=10
     for (key, season) in l.iteritems():
         d = {}
-        d['HWIN'] = round(Decimal(float(field_count(season, db.FTR, "H")) / len(season) * 100), 2)
-        d['AWIN'] = round(Decimal(float(field_count(season, db.FTR, "A")) / len(season) * 100), 2)
-        d['DRAW'] = round(Decimal(float(field_count(season, db.FTR, "D")) / len(season) * 100), 2)
-        d['HGOALS'] = round(Decimal(field_avg(season, db.FTHG)), 2)
-        d['AGOALS'] = round(Decimal(field_avg(season, db.FTAG)), 2)
+        calc_result_related(season, d)
+        calc_goal_related(season, d)
         season_stats_dict[key] = d
+
+
+def league_stats(l):
+    pass
+
 
 def homematch_stats(m, record):
     retval = record

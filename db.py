@@ -74,6 +74,7 @@ SEASON_DB_FIELDS = [SERIES, SEASON, HWIN, AWIN, DRAW, HGOALS, AGOALS]
 SEASON_TXT_FIELDS = [SERIES, SEASON, HWIN, AWIN, DRAW, HGOALS, AGOALS]
 SEASON_CSV_FIELDS = [SERIES, SEASON, HWIN, AWIN, DRAW, HGOALS, AGOALS]
 
+
 def map_value(data, field_map):
     for f in field_map:
         if f in data:
@@ -92,7 +93,8 @@ def matches_to_db(data, filename, output_type='text', do_filtering=False):
 
     if output_type == 'text':
         tbl = PrettyTable(fields)
-        map(tbl.add_row, [[x for x in map_value(d, fields)] for d in data])
+        [tbl.add_row([d[f] for f in fields]) for d in data]
+        #map(tbl.add_row, [[x for x in map_value(d, fields)] for d in data])
         f = open(filename, 'w')
         f.write(tbl.get_string())
     elif output_type == 'db':
