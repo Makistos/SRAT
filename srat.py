@@ -11,12 +11,18 @@ import db
 from decimal import *
 #import itertools as IT
 #import collections
-from itertools import imap
+from itertools import imap, groupby
 
 FIELDS = [db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG, db.HS, db.HST, db.AS, db.AST]
 DATE_FORMAT = '%y/%m/%d'
+
+# Dictionaries holding the generated data
 matches = {}
 season_stats_dict = {}
+league_stats_dict = {}
+country_stats_dict = {}
+team_stats_dict = {}
+team_season_stats_dict = {}
 
 # Extract some keys from a dict (the whole match dict is very big, this helps debugging)
 extract_dict = lambda keys, dict: reduce(lambda x, y: x.update({y[0]: y[1]}) or x,
@@ -154,6 +160,22 @@ def league_stats(l):
     pass
 
 
+def team_stats(l):
+    for k, g in groupby(sorted(flatten_dict(l), key=lambda k: k[db.HOME_TEAM]), lambda x: x[db.HOME_TEAM]):
+        if not (k, 'home') in team_stats_dict:
+            team_stats_dict[(k, 'home')] = {}
+        tlist = [x for x in g]
+        calc_result_related(tlist, team_stats_dict[(k, 'home')])
+        calc_goal_related(tlist, team_stats_dict[(k, 'home')])
+    for k, g in groupby(sorted(flatten_dict(l), key=lambda k: k[db.AWAY_TEAM]), lambda x: x[db.AWAY_TEAM]):
+        if not (k, 'away') in team_stats_dict:
+            team_stats_dict[(k, 'away')] = {}
+        tlist = [x for x in g]
+        calc_result_related(tlist, team_stats_dict[(k, 'away')])
+        calc_goal_related(tlist, team_stats_dict[(k, 'away')])
+
+
+
 def homematch_stats(m, record):
     retval = record
 
@@ -231,6 +253,8 @@ if __name__ == '__main__':
     teams = sorted(list(set(tmp)))
     versustable = map(lambda x: versus_team(matches_bydate, x), teams)
 
+    team_stats(matches)
+
     elo_calculate(matches_bydate)
 
 #    print_matches(l2)
@@ -301,6 +325,8 @@ if __name__ == '__main__':
     db.matches_to_db(e, 'test.txt', 'text', do_filtering=True)
     db.season_to_db(season_stats_dict, 'test2.txt', output_type='text')
     db.season_to_db(season_stats_dict, 'test2.csv', output_type='csv')
+
+    pprint(team_stats_dict)
 #    db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
     #db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
 

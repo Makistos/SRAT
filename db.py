@@ -62,6 +62,8 @@ DRAW = 'DRAW'
 HGOALS = 'HGOALS'
 AGOALS = 'AGOALS'
 
+# Team date
+TEAM = 'TEAM'
 FORM_TABLE = [2, 4, 6, 10, 15]  # Match lengths to which to calculate the form parameters
 
 # Fields that are written to db/txt/csv
