@@ -1,6 +1,7 @@
 __author__ = 'mep'
 
 import db
+import plot
 
 we = lambda old, opp, adj:  (1.0 / (10**(-(old - opp + adj)/400.0) + 1.0))
 team_matches = lambda li, team: [x for x in li if x[db.HOME_TEAM] == team or x[db.AWAY_TEAM] == team]
@@ -32,16 +33,12 @@ extract_dict = lambda keys, dict: reduce(lambda x, y: x.update({y[0]: y[1]}) or 
 def elo_calculate(matches):
     for i in range(len(matches)):
         match = list(matches)[i]
-        if match[db.HOME_TEAM] == 'Everton' or match[db.AWAY_TEAM] == 'Everton':
-            print extract_dict(TXT_FIELDS, match)
         ht_matches = team_matches(matches[0:i-1], match[db.HOME_TEAM])
         at_matches = team_matches(matches[0:i-1], match[db.AWAY_TEAM])
         (old_home_elo, old_home_change) = prev_elo_value(ht_matches, match[db.HOME_TEAM])
         (old_away_elo, old_away_change) = prev_elo_value(at_matches, match[db.AWAY_TEAM])
         match[db.HE] = old_home_elo + old_home_change
         match[db.AE] = old_away_elo + old_away_change
-        if match[db.HOME_TEAM] == 'Everton' or match[db.AWAY_TEAM] == 'Everton':
-            print extract_dict(TXT_FIELDS, match)
 
         (match[db.HEC], match[db.AEC]) = elo_adjust(match, match[db.HE], match[db.AE])
         if match[db.HOME_TEAM] == 'Everton' or match[db.AWAY_TEAM] == 'Everton':
@@ -114,3 +111,9 @@ def elo_calc_change(old_value, opp_value, is_home, scored, conceded):
     r = 40.0 * g * (result - we(old_value, opp_value, home_adj))
 
     return r
+
+
+def elo_plot(matches):
+    li2 = [int(m[db.FTHG]) - int(m[db.FTAG]) for m in matches]
+    li1 = [we(m[db.HE], m[db.AE], 100) for m in matches]
+    plot.plot_test(li1, li2)

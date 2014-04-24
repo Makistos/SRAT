@@ -6,12 +6,13 @@ from datetime import datetime
 from os import listdir
 from os.path import isfile, join
 import re
-from elo import elo_calculate
+from elo import elo_calculate, elo_plot
 import db
 from decimal import *
 #import itertools as IT
 #import collections
 from itertools import imap, groupby
+import plot
 
 FIELDS = [db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG, db.HS, db.HST, db.AS, db.AST, db.HHW, db.HC,
           db.AC, db.HF, db.AF, db.HY, db.AY, db.HR, db.AR, db.ATTENDANCE]
@@ -343,6 +344,7 @@ if __name__ == '__main__':
     db.season_to_db(season_stats_dict, 'test2.txt', output_type='text')
     db.season_to_db(season_stats_dict, 'test2.csv', output_type='csv')
 
+    elo_plot(matches_bydate)
 #    pprint(team_stats_dict)
 #    db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
     #db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
