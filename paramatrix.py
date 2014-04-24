@@ -3,7 +3,7 @@ from os import listdir
 import sys
 
 FIELDS = \
-['Div','Date','HomeTeam','AwayTeam','FTHG','FTAG','FTR','Attendance','HS','AS','HST','AST','HHW','AHW','HC','AC''HF','AF','HO','AO','HY','AY','HR','AR']
+['Div','Date','HomeTeam','AwayTeam','FTHG','FTAG','FTR','Attendance','Referee','HS','AS','HST','AST','HHW','AHW','HC','AC','HF','AF','HO','AO','HY','AY','HR','AR']
 
 csv_files = [f for f in listdir("csv") if isfile(join("csv", f)) and f.endswith(".csv")]
 print 'Season,' + ','.join(FIELDS)
