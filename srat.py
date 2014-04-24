@@ -13,7 +13,8 @@ from decimal import *
 #import collections
 from itertools import imap, groupby
 
-FIELDS = [db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG, db.HS, db.HST, db.AS, db.AST]
+FIELDS = [db.DATE, db.HOME_TEAM, db.AWAY_TEAM, db.FTR, db.FTHG, db.FTAG, db.HS, db.HST, db.AS, db.AST, db.HHW, db.HC,
+          db.AC, db.HF, db.AF, db.HY, db.AY, db.HR, db.AR, db.ATTENDANCE]
 DATE_FORMAT = '%y/%m/%d'
 
 # Dictionaries holding the generated data
@@ -146,6 +147,7 @@ def calc_goal_related(matches, result):
     result['AGOALS'] = round2(field_avg(matches, db.FTAG))
     result['NOHGOALS'] = percent(field_count(matches, db.FTHG, '0'), len(matches))
     result['NOAGOALS'] = percent(field_count(matches, db.FTAG, '0'), len(matches))
+    result['NUM_MATCHES'] = len(matches)
 
 
 def season_stats(l):
@@ -173,7 +175,6 @@ def team_stats(l):
         tlist = [x for x in g]
         calc_result_related(tlist, team_stats_dict[(k, 'away')])
         calc_goal_related(tlist, team_stats_dict[(k, 'away')])
-
 
 
 def homematch_stats(m, record):
@@ -290,6 +291,14 @@ if __name__ == '__main__':
             match[db.FTHGC + str(f)] = avg_x(sum_x(hteam_home, f, db.FTAG), f)
             match[db.HS + str(f)] = avg_x(sum_x(hteam_home, f, db.HS), f)
             match[db.HST + str(f)] = avg_x(sum_x(hteam_home, f, db.HST), f)
+            match[db.HC + str(f)] = avg_x(sum_x(hteam_home, f, db.HC), f)
+            match[db.HCC + str(f)] = avg_x(sum_x(hteam_home, f, db.AC), f)
+            match[db.HF + str(f)] = avg_x(sum_x(hteam_home, f, db.HF), f)
+            match[db.HFA + str(f)] = avg_x(sum_x(hteam_home, f, db.AF), f)
+            match[db.HY + str(f)] = avg_x(sum_x(hteam_home, f, db.HY), f)
+            match[db.HYA + str(f)] = avg_x(sum_x(hteam_home, f, db.AY), f)
+#            match[db.HTHA + str(f)] = avg_x(sum_x(hteam_home, f, db.ATTENDANCE), f)
+#            match[db.HTAA + str(f)] = avg_x(sum_x(hteam_away, f, db.ATTENDANCE), f)
             # Home and away matches
             match[db.THW + str(f)] = len([m for m in last_x(date_sort(hteam_home + hteam_away), f)
                 if ((m[db.HOME_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'W') or
@@ -303,8 +312,16 @@ if __name__ == '__main__':
             match[db.AD + str(f)] = count_x(ateam_away, f, db.FTR, 'D')
             match[db.FTAGS + str(f)] = avg_x(sum_x(ateam_away, f, db.FTAG), f)
             match[db.FTAGC + str(f)] = avg_x(sum_x(ateam_away, f, db.FTHG),f )
-            match[db.AS + str(f)] = avg_x(sum_x(hteam_home, f, db.AS), f)
-            match[db.AST + str(f)] = avg_x(sum_x(hteam_home, f, db.AST), f)
+            match[db.AS + str(f)] = avg_x(sum_x(ateam_home, f, db.AS), f)
+            match[db.AST + str(f)] = avg_x(sum_x(ateam_home, f, db.AST), f)
+            match[db.AC + str(f)] = avg_x(sum_x(ateam_home, f, db.AC), f)
+            match[db.ACC + str(f)] = avg_x(sum_x(ateam_home, f, db.HC), f)
+            match[db.AF + str(f)] = avg_x(sum_x(ateam_home, f, db.AF), f)
+            match[db.AFA + str(f)] = avg_x(sum_x(ateam_home, f, db.HF), f)
+            match[db.AY + str(f)] = avg_x(sum_x(ateam_home, f, db.AY), f)
+            match[db.AYA + str(f)] = avg_x(sum_x(ateam_home, f, db.HY), f)
+#            match[db.ATHA + str(f)] = avg_x(sum_x(ateam_home, f, db.ATTENDANCE), f)
+#            match[db.ATAA + str(f)] = avg_x(sum_x(ateam_away, f, db.ATTENDANCE), f)
             # Home and away matches
             match[db.THW + str(f)] = len([m for m in last_x(date_sort(hteam_home + hteam_away), f)
                                           if ((m[db.HOME_TEAM] == match[db.HOME_TEAM] and m[db.FTR] == 'W') or
@@ -326,7 +343,7 @@ if __name__ == '__main__':
     db.season_to_db(season_stats_dict, 'test2.txt', output_type='text')
     db.season_to_db(season_stats_dict, 'test2.csv', output_type='csv')
 
-    pprint(team_stats_dict)
+#    pprint(team_stats_dict)
 #    db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
     #db.to_db([extract_dict(db.DB_FIELDS, row) for row in e], 'test.txt', 'text')
 
