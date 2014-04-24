@@ -10,6 +10,10 @@ HOME_TEAM = 'HomeTeam'
 AWAY_TEAM = 'AwayTeam'
 REFEREE = 'Referee'     # Referee name
 ATTENDANCE = 'ATTENDANCE'
+HTHA = 'HTHA'           # Home team home attendance
+HTAA = 'HTAA'           # Home team away attendance
+ATHA = 'ATHA'           # Home team home attendance
+ATAA = 'ATAA'           # Away team away attendance
 MONTH = 'MONTH'         # Week the match was played on
 WEEKDAY = 'WEEKDAY'     # Weekday the match was played on
 FTR = 'FTR'             # Full-time result
@@ -24,17 +28,25 @@ AS = 'AS'               # Away team shots
 HST = 'HST'             # Home team shots on target
 AST = 'AST'             # Away team shots on target
 HC = 'HC'               # Home team corners
+HCC = 'HCC'             # Home team corners conceded
 AC = 'AC'               # Away team corners
+ACC = 'ACC'             # Away team corners conceded
 HHW = 'HHW'             # Home team hit woodwork
 AHW = 'AHW'             # Away team hit woodwork
 HF = 'HF'               # Home team fouls commited
+HFA = 'HFA'             # Home team fouls commited against
 AF = 'AF'               # Away team fouls commited
+AFA = 'AFA'             # Away team fouls commited against
 HO = 'HO'               # Home team offsides
 AO = 'AO'               # Away team offsides
 HY = 'HY'               # Home team yellow cards
+HYA = 'HYA'             # Home team yellow cards against
 AY = 'AY'               # Away team yellow cards
+AYA = 'AYA'             # Away team yellow cards against
 HR = 'HR'               # Home team red cards
+HRA = 'HRA'             # Home team red cards against
 AR = 'AR'               # Away team red cards
+ARA = 'ARA'             # Away team red cards against
 
 HW = 'HW'             # Home wins for last x (for home team)
 HD = 'HD'             # Home draws for last x (for home team)
@@ -61,6 +73,7 @@ AWIN = 'AWIN'
 DRAW = 'DRAW'
 HGOALS = 'HGOALS'
 AGOALS = 'AGOALS'
+NUM_MATCHES = "NUM_MATCHES"
 
 # Team date
 TEAM = 'TEAM'
@@ -68,7 +81,7 @@ FORM_TABLE = [2, 4, 6, 10, 15]  # Match lengths to which to calculate the form p
 
 # Fields that are written to db/txt/csv
 ALL_FIELDS = [DATE, HOME_TEAM, AWAY_TEAM, FTR, FTHG, FTAG, HS, HST, AS, AST]
-TXT_FIELDS = [DATE, FTR, HOME_TEAM, FTHG, FTAG, AWAY_TEAM, HE, AE, MONTH, WEEKDAY]
+TXT_FIELDS = [DATE, FTR, HOME_TEAM, FTHG, FTAG, AWAY_TEAM, HE, AE, HEC, AEC, MONTH, WEEKDAY]
 DB_FIELDS = ALL_FIELDS
 CSV_FIELDS = TXT_FIELDS
 
