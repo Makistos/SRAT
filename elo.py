@@ -3,43 +3,49 @@ __author__ = 'mep'
 import db
 
 we = lambda old, opp, adj:  (1.0 / (10**(-(old - opp + adj)/400.0) + 1.0))
+team_matches = lambda li, team: [x for x in li if x[db.HOME_TEAM] == team or x[db.AWAY_TEAM] == team]
+
+TXT_FIELDS = [db.DATE, db.FTR, db.HOME_TEAM, db.FTHG, db.FTAG, db.AWAY_TEAM, db.HE, db.AE, db.HEC, db.AEC]
+TXT_FIELDS2 = [db.DATE, db.FTR, db.HOME_TEAM, db.FTHG, db.FTAG, db.AWAY_TEAM, db.HE, db.AE, db.HEC, db.AEC]
+
+def prev_elo_value(li, team):
+    e = 1000
+    c = 0
+    if len(li) == 0:
+        return 1000, 0
+    if li[-1][db.HOME_TEAM] == team:
+        if db.HE in li[-1]:
+            e = li[-1][db.HE]
+        if db.HEC in li[-1]:
+            c = li[-1][db.HEC]
+    elif li[-1][db.AWAY_TEAM] == team:
+        if db.AE in li[-1]:
+            e = li[-1][db.AE]
+        if db.AEC in li[-1]:
+            c = li[-1][db.AEC]
+
+    return e, c
+
+extract_dict = lambda keys, dict: reduce(lambda x, y: x.update({y[0]: y[1]}) or x,
+                                         map(None, keys, map(dict.get, keys)), {})
 
 def elo_calculate(matches):
     for i in range(len(matches)):
         match = list(matches)[i]
-        #        print match
-        tmp = [x for x in matches[0:i-1] if x[db.HOME_TEAM] == match[db.HOME_TEAM]]
-        if len(tmp) < 1:
-            old_home = 1000
-        elif db.HE in tmp[-1]:
-            old_home = tmp[-1][db.HE]
-        else:
-            old_home = 1000
-        tmp = [x for x in matches[0:i-1] if x[db.AWAY_TEAM] == match[db.AWAY_TEAM]]
-        if len(tmp) < 1:
-            old_home = 1000
-        elif db.AE in tmp[-1]:
-            old_away = tmp[-1][db.AE]
-        else:
-            old_away = 1000
+        if match[db.HOME_TEAM] == 'Everton' or match[db.AWAY_TEAM] == 'Everton':
+            print extract_dict(TXT_FIELDS, match)
+        ht_matches = team_matches(matches[0:i-1], match[db.HOME_TEAM])
+        at_matches = team_matches(matches[0:i-1], match[db.AWAY_TEAM])
+        (old_home_elo, old_home_change) = prev_elo_value(ht_matches, match[db.HOME_TEAM])
+        (old_away_elo, old_away_change) = prev_elo_value(at_matches, match[db.AWAY_TEAM])
+        match[db.HE] = old_home_elo + old_home_change
+        match[db.AE] = old_away_elo + old_away_change
+        if match[db.HOME_TEAM] == 'Everton' or match[db.AWAY_TEAM] == 'Everton':
+            print extract_dict(TXT_FIELDS, match)
 
-        (new_home, new_away) = elo_adjust(match, old_home, old_away)
-
-        match[db.HE] = old_home + new_home
-        match[db.HEC] = new_home
-        match[db.AE] = old_away + new_away
-        match[db.AEC] = new_away
-#        print match
-#        print ("%s: %s (%d -> %d) %d - %d %s (%d -> %d)" % (match["Date"],
-#                                                            match["HomeTeam"],
-#                                                            float(round(old_home, 2)),
-#                                                            float(round(match["home_elo"],2)),
-#                                                            int(match["FTHG"]),
-#                                                            int(match["FTAG"]),
-#                                                            match["AwayTeam"],
-#                                                            float(round(old_away, 2)),
-#                                                            float(round(match["away_elo"], 2))))
-
+        (match[db.HEC], match[db.AEC]) = elo_adjust(match, match[db.HE], match[db.AE])
+        if match[db.HOME_TEAM] == 'Everton' or match[db.AWAY_TEAM] == 'Everton':
+            print extract_dict(TXT_FIELDS, match)
 
 
 def elo_adjust(match, home_elo, away_elo):
@@ -95,14 +101,16 @@ def elo_calc_change(old_value, opp_value, is_home, scored, conceded):
     home_adj = 0.0
     if is_home:
         home_adj = 100.0
+    else:
+        home_adj = -100.0
 
-    if (scored > conceded):
+    if scored > conceded:
         result = 1.0
-    elif (scored == conceded):
+    elif scored == conceded:
         result = 0.5
     else:
         result = 0.0
 
-    r = 20.0 * g * (result - we(old_value, opp_value, home_adj))
+    r = 40.0 * g * (result - we(old_value, opp_value, home_adj))
 
     return r
